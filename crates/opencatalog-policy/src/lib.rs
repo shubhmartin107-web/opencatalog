@@ -1,6 +1,6 @@
-use opencatalog_core::error::{CatalogError, CatalogResult};
+use opencatalog_core::error::CatalogResult;
 use opencatalog_core::types::*;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 
 /// Evaluates policies against a query/role context and returns applicable transformations.
 pub struct PolicyEvaluator;
@@ -110,7 +110,7 @@ impl PolicyEvaluator {
                 hex::encode(hash)
             }
             MaskMethod::Mask { character, count } => {
-                std::iter::repeat(*character).take(*count).collect()
+                std::iter::repeat_n(*character, *count).collect()
             }
             MaskMethod::Custom(s) => s.clone(),
         }

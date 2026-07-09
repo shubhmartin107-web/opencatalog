@@ -10,6 +10,12 @@ use crate::openingest::OpenIngestCrawler;
 
 pub struct CrawlerRegistry;
 
+impl Default for CrawlerRegistry {
+    fn default() -> Self {
+        Self
+    }
+}
+
 impl CrawlerRegistry {
     pub fn new() -> Self {
         Self
@@ -65,7 +71,7 @@ impl CrawlerRegistry {
                 }
 
                 // Persist lineage edges (requires node IDs to be set by the store)
-                for mut edge in crawl_result.lineage_edges {
+                for edge in crawl_result.lineage_edges {
                     // In a full implementation, we'd create lineage nodes and edges
                     // with proper dataset_id references. For now, we record them.
                     let _ = edge.id;

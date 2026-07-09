@@ -30,7 +30,7 @@ impl OpenIngestCrawler {
 
         let mut datasets = Vec::new();
         let mut lineage_edges = Vec::new();
-        let mut openlineage_events = Vec::new();
+        let openlineage_events = Vec::new();
 
         for pipeline in &pipelines {
             let pipeline_id = pipeline["id"].as_str().unwrap_or("unknown");

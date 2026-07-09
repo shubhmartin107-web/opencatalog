@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use opencatalog_core::error::CatalogResult;
 use opencatalog_core::types::*;
 use uuid::Uuid;
 

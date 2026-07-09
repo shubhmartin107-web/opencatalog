@@ -104,33 +104,33 @@ impl DbtCrawler {
             }
 
             let mut columns: Vec<Column> = Vec::new();
-            let mut ordinal = 0;
 
-            for (col_key, col_info) in &node.columns {
+            for (ordinal, (col_key, col_info)) in node.columns.iter().enumerate() {
+                let ordinal = ordinal as i32;
                 let data_type = col_info.data_type.clone().unwrap_or_else(|| "string".into());
                 let col_tags: Vec<String> = Vec::new();
 
                 // Enrich with catalog metadata if available
                 let mut col_metadata: HashMap<String, String> = HashMap::new();
-                if let Some(node_catalog) = catalog_columns.get(node_key) {
-                    if let Some(cat_col) = node_catalog.get(col_key) {
-                        if let Some(ct) = &cat_col.data_type {
-                            col_metadata.insert("catalog_data_type".into(), ct.clone());
+                if let Some(node_catalog) = catalog_columns.get(node_key)
+                    && let Some(cat_col) = node_catalog.get(col_key)
+                {
+                    if let Some(ct) = &cat_col.data_type {
+                        col_metadata.insert("catalog_data_type".into(), ct.clone());
+                    }
+                    if let Some(comment) = &cat_col.comment {
+                        col_metadata.insert("catalog_comment".into(), comment.clone());
+                    }
+                    if let Some(stats) = &cat_col.stats {
+                        if let Some(distinct) = stats.get("distinct_values")
+                            && let Some(v) = distinct.as_str()
+                        {
+                            col_metadata.insert("distinct_values".into(), v.into());
                         }
-                        if let Some(comment) = &cat_col.comment {
-                            col_metadata.insert("catalog_comment".into(), comment.clone());
-                        }
-                        if let Some(stats) = &cat_col.stats {
-                            if let Some(distinct) = stats.get("distinct_values") {
-                                if let Some(v) = distinct.as_str() {
-                                    col_metadata.insert("distinct_values".into(), v.into());
-                                }
-                            }
-                            if let Some(nulls) = stats.get("null_count") {
-                                if let Some(v) = nulls.as_str() {
-                                    col_metadata.insert("null_count".into(), v.into());
-                                }
-                            }
+                        if let Some(nulls) = stats.get("null_count")
+                            && let Some(v) = nulls.as_str()
+                        {
+                            col_metadata.insert("null_count".into(), v.into());
                         }
                     }
                 }
@@ -150,7 +150,6 @@ impl DbtCrawler {
                     glossary_term_id: None,
                     metadata: col_metadata,
                 });
-                ordinal += 1;
             }
 
             let now = chrono::Utc::now();

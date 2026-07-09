@@ -13,7 +13,7 @@ use crate::AppState;
 /// Reads `X-API-Key` header. If `api_keys` is empty in config, auth is disabled.
 pub async fn auth_middleware(
     Extension(state): Extension<Arc<AppState>>,
-    mut req: Request,
+    req: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
     let api_keys = &state.api_keys;

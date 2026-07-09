@@ -1292,8 +1292,8 @@ impl CatalogStore for SqliteCatalogStore {
 
         if let Ok(mut stmt) = conn.prepare(
             "SELECT id, name, description FROM datasets WHERE LOWER(name) LIKE ?1 OR LOWER(description) LIKE ?1 LIMIT ?2",
-        ) {
-            if let Ok(rows) = stmt.query_map(rusqlite::params![q, limit as i64], |row| {
+        )
+            && let Ok(rows) = stmt.query_map(rusqlite::params![q, limit as i64], |row| {
                 Ok(SearchResult {
                     dataset_id: Some(uuid(row.get::<_, String>(0)?.as_str())),
                     column_id: None,
@@ -1303,17 +1303,17 @@ impl CatalogStore for SqliteCatalogStore {
                     score: 0.8,
                     kind: "dataset".into(),
                 })
-            }) {
-                for row in rows.flatten() {
-                    results.push(row);
-                }
+            })
+        {
+            for row in rows.flatten() {
+                results.push(row);
             }
         }
 
         if let Ok(mut stmt) = conn.prepare(
             "SELECT id, name, description FROM glossary_terms WHERE LOWER(name) LIKE ?1 OR LOWER(description) LIKE ?1 LIMIT ?2",
-        ) {
-            if let Ok(rows) = stmt.query_map(rusqlite::params![q, limit as i64], |row| {
+        )
+            && let Ok(rows) = stmt.query_map(rusqlite::params![q, limit as i64], |row| {
                 Ok(SearchResult {
                     dataset_id: None,
                     column_id: None,
@@ -1323,10 +1323,10 @@ impl CatalogStore for SqliteCatalogStore {
                     score: 0.9,
                     kind: "glossary_term".into(),
                 })
-            }) {
-                for row in rows.flatten() {
-                    results.push(row);
-                }
+            })
+        {
+            for row in rows.flatten() {
+                results.push(row);
             }
         }
 

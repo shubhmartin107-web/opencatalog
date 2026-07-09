@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use opencatalog_core::error::CatalogResult;
 use opencatalog_core::types::{ColumnLineageFacet, ColumnLineageInfo, ColumnLineageInput, OpenLineageEvent};
 use uuid::Uuid;
 
@@ -12,34 +11,33 @@ pub fn extract_column_lineage(event: &OpenLineageEvent) -> Vec<ColumnLineageInfo
         let output_name = &output.name;
         let output_ns = &output.namespace;
 
-        if let Some(facets) = &output.facets {
-            if let Some(cl_facet_val) = facets.get("columnLineage") {
-                if let Ok(cl_facet) = serde_json::from_value::<ColumnLineageFacet>(cl_facet_val.clone()) {
-                    for (target_col, field_info) in &cl_facet.fields {
-                        for input in &field_info.input_fields {
-                            let trans_type = input
-                                .transformations
-                                .first()
-                                .map(|t| t.trans_type.clone())
-                                .unwrap_or_else(|| "DIRECT".into());
+        if let Some(facets) = &output.facets
+            && let Some(cl_facet_val) = facets.get("columnLineage")
+            && let Ok(cl_facet) = serde_json::from_value::<ColumnLineageFacet>(cl_facet_val.clone())
+        {
+            for (target_col, field_info) in &cl_facet.fields {
+                for input in &field_info.input_fields {
+                    let trans_type = input
+                        .transformations
+                        .first()
+                        .map(|t| t.trans_type.clone())
+                        .unwrap_or_else(|| "DIRECT".into());
 
-                            let trans_subtype = input
-                                .transformations
-                                .first()
-                                .map(|t| t.subtype.clone())
-                                .unwrap_or_else(|| "IDENTITY".into());
+                    let trans_subtype = input
+                        .transformations
+                        .first()
+                        .map(|t| t.subtype.clone())
+                        .unwrap_or_else(|| "IDENTITY".into());
 
-                            results.push(ColumnLineageInfo {
-                                source_dataset: format!("{}:{}", input.namespace, input.name),
-                                source_column: input.field.clone(),
-                                target_dataset: format!("{output_ns}:{output_name}"),
-                                target_column: target_col.clone(),
-                                transformation_type: trans_type,
-                                transformation_subtype: trans_subtype,
-                                transformation_sql: None,
-                            });
-                        }
-                    }
+                    results.push(ColumnLineageInfo {
+                        source_dataset: format!("{}:{}", input.namespace, input.name),
+                        source_column: input.field.clone(),
+                        target_dataset: format!("{output_ns}:{output_name}"),
+                        target_column: target_col.clone(),
+                        transformation_type: trans_type,
+                        transformation_subtype: trans_subtype,
+                        transformation_sql: None,
+                    });
                 }
             }
         }

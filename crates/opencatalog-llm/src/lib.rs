@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use opencatalog_core::error::{CatalogError, CatalogResult};
 use opencatalog_core::types::*;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use serde::Deserialize;
 
 /// Client for Ollama-compatible local LLM API.
 pub struct OllamaClient {

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     Json,
-    extract::{Extension, Path, Query},
+    extract::{Extension, Query},
     http::StatusCode,
 };
 use opencatalog_core::traits::CatalogStore;

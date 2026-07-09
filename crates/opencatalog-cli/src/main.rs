@@ -1,6 +1,4 @@
 use clap::{Parser, Subcommand};
-use opencatalog_core::error::CatalogResult;
-use opencatalog_core::types::*;
 
 #[derive(Parser)]
 #[command(name = "opencatalog", about = "OpenCatalog — Automated Metadata Catalog")]

@@ -3,8 +3,6 @@ pub mod mcp;
 pub mod middleware;
 pub mod rest;
 
-use std::sync::Arc;
-
 use opencatalog_crawler::CrawlerRegistry;
 use opencatalog_store::MemoryCatalogStore;
 

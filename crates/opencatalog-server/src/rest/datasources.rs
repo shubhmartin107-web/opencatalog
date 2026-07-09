@@ -2,11 +2,11 @@ use std::sync::Arc;
 
 use axum::{
     Json,
-    extract::{Extension, Path, Query},
+    extract::{Extension, Path},
     http::StatusCode,
 };
 use opencatalog_core::traits::CatalogStore;
-use opencatalog_core::types::{DataSource, PaginatedResponse, PaginationParams};
+use opencatalog_core::types::{DataSource, PaginatedResponse};
 use serde::Deserialize;
 use uuid::Uuid;
 

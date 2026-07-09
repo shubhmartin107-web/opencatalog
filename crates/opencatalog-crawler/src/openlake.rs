@@ -37,7 +37,7 @@ impl OpenLakeCrawler {
         };
 
         let mut datasets = Vec::new();
-        let mut lineage_edges = Vec::new();
+        let lineage_edges = Vec::new();
 
         // 2. For each namespace, list tables
         for namespace in &namespaces {

@@ -13,8 +13,6 @@ use uuid::Uuid;
 
 type Graph = DiGraph<LineageNode, LineageEdge>;
 
-
-
 #[derive(Default)]
 struct Inner {
     datasources: HashMap<Uuid, DataSource>,
@@ -164,7 +162,7 @@ impl CatalogStore for MemoryCatalogStore {
             .values()
             .filter(|d| {
                 d.name.to_lowercase().contains(&q)
-                    || d.description.as_deref().map_or(false, |s| s.to_lowercase().contains(&q))
+                    || d.description.as_deref().is_some_and(|s| s.to_lowercase().contains(&q))
                     || d.tags.iter().any(|t| t.to_lowercase().contains(&q))
             })
             .cloned()
@@ -223,12 +221,12 @@ impl CatalogStore for MemoryCatalogStore {
 
     async fn update_column(&self, mut col: Column) -> CatalogResult<Column> {
         let mut inner = self.inner.write();
-        if let Some(cols) = inner.columns.get_mut(&col.dataset_id) {
-            if let Some(existing) = cols.iter_mut().find(|c| c.id == col.id) {
-                col.ordinal_position = existing.ordinal_position;
-                *existing = col.clone();
-                return Ok(col);
-            }
+        if let Some(cols) = inner.columns.get_mut(&col.dataset_id)
+            && let Some(existing) = cols.iter_mut().find(|c| c.id == col.id)
+        {
+            col.ordinal_position = existing.ordinal_position;
+            *existing = col.clone();
+            return Ok(col);
         }
         Err(CatalogError::NotFound(format!("column {}", col.id)))
     }
@@ -414,29 +412,26 @@ impl CatalogStore for MemoryCatalogStore {
             let Some(&dst_idx) = inner.lineage_node_map.get(&edge.target_node_id) else { continue };
             let src = &inner.lineage_graph[src_idx];
             let dst = &inner.lineage_graph[dst_idx];
-            if dst.dataset_id == dataset_id {
-                if let Some(col_id) = dst.column_id {
-                    if let Some(cols) = inner.columns.get(&dataset_id) {
-                        if let Some(col) = cols.iter().find(|c| c.id == col_id) {
-                            if col.name == column_name {
-                                let src_name = inner
-                                    .datasets
-                                    .get(&src.dataset_id)
-                                    .map(|d| d.name.clone())
-                                    .unwrap_or_default();
-                                results.push(ColumnLineageInfo {
-                                    source_dataset: src_name.clone(),
-                                    source_column: src.label.clone(),
-                                    target_dataset: dst.label.clone(),
-                                    target_column: column_name.to_string(),
-                                    transformation_type: edge.transformation_type.clone(),
-                                    transformation_subtype: edge.transformation_subtype.clone(),
-                                    transformation_sql: edge.transformation_sql.clone(),
-                                });
-                            }
-                        }
-                    }
-                }
+            if dst.dataset_id == dataset_id
+                && let Some(col_id) = dst.column_id
+                && let Some(cols) = inner.columns.get(&dataset_id)
+                && let Some(col) = cols.iter().find(|c| c.id == col_id)
+                && col.name == column_name
+            {
+                let src_name = inner
+                    .datasets
+                    .get(&src.dataset_id)
+                    .map(|d| d.name.clone())
+                    .unwrap_or_default();
+                results.push(ColumnLineageInfo {
+                    source_dataset: src_name.clone(),
+                    source_column: src.label.clone(),
+                    target_dataset: dst.label.clone(),
+                    target_column: column_name.to_string(),
+                    transformation_type: edge.transformation_type.clone(),
+                    transformation_subtype: edge.transformation_subtype.clone(),
+                    transformation_sql: edge.transformation_sql.clone(),
+                });
             }
         }
         Ok(results)
@@ -586,11 +581,11 @@ impl CatalogStore for MemoryCatalogStore {
 
     async fn update_crawl_run(&self, run: CrawlRun) -> CatalogResult<CrawlRun> {
         let mut inner = self.inner.write();
-        if let Some(runs) = inner.crawl_runs.get_mut(&run.data_source_id) {
-            if let Some(existing) = runs.iter_mut().find(|r| r.id == run.id) {
-                *existing = run.clone();
-                return Ok(run);
-            }
+        if let Some(runs) = inner.crawl_runs.get_mut(&run.data_source_id)
+            && let Some(existing) = runs.iter_mut().find(|r| r.id == run.id)
+        {
+            *existing = run.clone();
+            return Ok(run);
         }
         Err(CatalogError::NotFound(format!("crawl run {}", run.id)))
     }
@@ -612,7 +607,7 @@ impl CatalogStore for MemoryCatalogStore {
                 1.0
             } else if ds.name.to_lowercase().contains(&q) {
                 0.8
-            } else if ds.description.as_deref().map_or(false, |s| s.to_lowercase().contains(&q)) {
+            } else if ds.description.as_deref().is_some_and(|s| s.to_lowercase().contains(&q)) {
                 0.6
             } else if ds.tags.iter().any(|t| t.to_lowercase().contains(&q)) {
                 0.5
@@ -632,20 +627,19 @@ impl CatalogStore for MemoryCatalogStore {
 
         for cols in inner.columns.values() {
             for col in cols {
-                if col.name.to_lowercase().contains(&q)
-                    || col.description.as_deref().map_or(false, |s| s.to_lowercase().contains(&q))
+                if (col.name.to_lowercase().contains(&q)
+                    || col.description.as_deref().is_some_and(|s| s.to_lowercase().contains(&q)))
+                    && let Some(ds) = inner.datasets.get(&col.dataset_id)
                 {
-                    if let Some(ds) = inner.datasets.get(&col.dataset_id) {
-                        results.push(SearchResult {
-                            dataset_id: Some(ds.id),
-                            column_id: Some(col.id),
-                            glossary_term_id: None,
-                            name: format!("{}.{}", ds.name, col.name),
-                            description: col.description.clone(),
-                            score: 0.7,
-                            kind: "column".into(),
-                        });
-                    }
+                    results.push(SearchResult {
+                        dataset_id: Some(ds.id),
+                        column_id: Some(col.id),
+                        glossary_term_id: None,
+                        name: format!("{}.{}", ds.name, col.name),
+                        description: col.description.clone(),
+                        score: 0.7,
+                        kind: "column".into(),
+                    });
                 }
             }
         }
