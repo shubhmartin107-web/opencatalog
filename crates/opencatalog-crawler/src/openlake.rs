@@ -60,7 +60,7 @@ impl OpenLakeCrawler {
                     "{}/api/v1/namespaces/{}/tables/{}",
                     base_url.trim_end_matches('/'),
                     namespace,
-                    &table_name
+                    table_name
                 );
 
                 let (schema_cols, location, _snapshot_id) = match client
