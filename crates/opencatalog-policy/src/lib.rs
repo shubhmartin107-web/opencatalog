@@ -161,8 +161,14 @@ mod tests {
 
     #[test]
     fn test_mask_methods() {
-        assert_eq!(PolicyEvaluator::apply_mask("test@email.com", &MaskMethod::Redact), "***REDACTED***");
-        assert_eq!(PolicyEvaluator::apply_mask("test@email.com", &MaskMethod::Nullify), "");
+        assert_eq!(
+            PolicyEvaluator::apply_mask("test@email.com", &MaskMethod::Redact),
+            "***REDACTED***"
+        );
+        assert_eq!(
+            PolicyEvaluator::apply_mask("test@email.com", &MaskMethod::Nullify),
+            ""
+        );
         assert_eq!(
             PolicyEvaluator::apply_mask("test@email.com", &MaskMethod::Partial(4)),
             "test**********"

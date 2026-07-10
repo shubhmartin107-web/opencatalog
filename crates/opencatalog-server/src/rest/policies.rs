@@ -35,7 +35,11 @@ pub async fn list_policies(
         offset: params.offset.unwrap_or(0),
         limit: params.limit.unwrap_or(50),
     };
-    let policies = state.store.list_policies(&pagination).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let policies = state
+        .store
+        .list_policies(&pagination)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(policies))
 }
 
@@ -75,6 +79,10 @@ pub async fn create_policy(
         updated_at: chrono::Utc::now(),
     };
 
-    let created = state.store.create_policy(policy).await.map_err(|_| StatusCode::CONFLICT)?;
+    let created = state
+        .store
+        .create_policy(policy)
+        .await
+        .map_err(|_| StatusCode::CONFLICT)?;
     Ok((StatusCode::CREATED, Json(created)))
 }

@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use opencatalog_core::types::{ColumnLineageFacet, ColumnLineageInfo, ColumnLineageInput, OpenLineageEvent};
+use opencatalog_core::types::{
+    ColumnLineageFacet, ColumnLineageInfo, ColumnLineageInput, OpenLineageEvent,
+};
 use uuid::Uuid;
 
 /// Parses an OpenLineage event and extracts column-level lineage information.
@@ -57,7 +59,8 @@ pub fn build_openlineage_event(
     let mut output_datasets = Vec::new();
 
     for (output_ns, output_name, col_lineages) in &outputs {
-        let mut fields: HashMap<String, opencatalog_core::types::ColumnLineageField> = HashMap::new();
+        let mut fields: HashMap<String, opencatalog_core::types::ColumnLineageField> =
+            HashMap::new();
 
         for lin in col_lineages {
             let input = ColumnLineageInput {
@@ -107,11 +110,13 @@ pub fn build_openlineage_event(
 
     let input_datasets: Vec<opencatalog_core::types::OpenLineageDatasetRef> = inputs
         .into_iter()
-        .map(|(ns, name, _)| opencatalog_core::types::OpenLineageDatasetRef {
-            namespace: ns.to_string(),
-            name: name.to_string(),
-            facets: None,
-        })
+        .map(
+            |(ns, name, _)| opencatalog_core::types::OpenLineageDatasetRef {
+                namespace: ns.to_string(),
+                name: name.to_string(),
+                facets: None,
+            },
+        )
         .collect();
 
     OpenLineageEvent {

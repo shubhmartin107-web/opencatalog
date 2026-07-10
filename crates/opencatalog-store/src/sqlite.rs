@@ -218,11 +218,17 @@ fn compute_schema_diff(from: &[Column], to: &[Column]) -> String {
             }
             if col.is_primary_key != old_pk {
                 changed = true;
-                detail.push_str(&format!(", primary_key: {} -> {}", old_pk, col.is_primary_key));
+                detail.push_str(&format!(
+                    ", primary_key: {} -> {}",
+                    old_pk, col.is_primary_key
+                ));
             }
             if col.is_foreign_key != old_fk {
                 changed = true;
-                detail.push_str(&format!(", foreign_key: {} -> {}", old_fk, col.is_foreign_key));
+                detail.push_str(&format!(
+                    ", foreign_key: {} -> {}",
+                    old_fk, col.is_foreign_key
+                ));
             }
             if changed {
                 lines.push(format!("~ {} {} ({})", col.name, col.column_type, detail));
@@ -597,10 +603,9 @@ impl CatalogStore for SqliteCatalogStore {
                     "SELECT schema_json FROM schema_versions WHERE dataset_id=?1 AND version=?2",
                 )
                 .map_err(|e| CatalogError::StorageError(e.to_string()))?;
-            stmt.query_row(
-                rusqlite::params![ds.id.to_string(), prev_version],
-                |r| r.get::<_, String>(0),
-            )
+            stmt.query_row(rusqlite::params![ds.id.to_string(), prev_version], |r| {
+                r.get::<_, String>(0)
+            })
             .ok()
         };
 
@@ -734,9 +739,7 @@ impl CatalogStore for SqliteCatalogStore {
         let rows = stmt
             .query_map(
                 rusqlite::params![dataset_id.to_string(), column_id.map(|id| id.to_string())],
-                |row| {
-                    Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-                },
+                |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
             )
             .map_err(|e| CatalogError::StorageError(e.to_string()))?;
         let mut map = HashMap::new();
@@ -747,12 +750,18 @@ impl CatalogStore for SqliteCatalogStore {
         Ok(map)
     }
 
-    async fn delete_metadata(&self, dataset_id: Uuid, key: &str, _column_id: Option<Uuid>) -> CatalogResult<()> {
+    async fn delete_metadata(
+        &self,
+        dataset_id: Uuid,
+        key: &str,
+        _column_id: Option<Uuid>,
+    ) -> CatalogResult<()> {
         let conn = self.conn.lock();
         conn.execute(
             "DELETE FROM metadata WHERE dataset_id=?1 AND key=?2",
             rusqlite::params![dataset_id.to_string(), key],
-        ).map_err(|e| CatalogError::StorageError(e.to_string()))?;
+        )
+        .map_err(|e| CatalogError::StorageError(e.to_string()))?;
         Ok(())
     }
 
@@ -784,9 +793,7 @@ impl CatalogStore for SqliteCatalogStore {
             .query_row("SELECT COUNT(*) FROM audit_log", [], |r| r.get(0))
             .map_err(|e| CatalogError::StorageError(e.to_string()))?;
         let mut stmt = conn
-            .prepare(
-                "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT ?1 OFFSET ?2",
-            )
+            .prepare("SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT ?1 OFFSET ?2")
             .map_err(|e| CatalogError::StorageError(e.to_string()))?;
         let rows = stmt
             .query_map(
@@ -898,7 +905,10 @@ impl CatalogStore for SqliteCatalogStore {
         let conn = self.conn.lock();
         conn.execute(
             "INSERT INTO openlineage_events (event_json, ingested_at) VALUES (?1, ?2)",
-            rusqlite::params![serde_json::to_string(&event).unwrap_or_default(), Utc::now().to_rfc3339()],
+            rusqlite::params![
+                serde_json::to_string(&event).unwrap_or_default(),
+                Utc::now().to_rfc3339()
+            ],
         )
         .map_err(|e| CatalogError::StorageError(e.to_string()))?;
         Ok(())
@@ -1330,7 +1340,11 @@ impl CatalogStore for SqliteCatalogStore {
             }
         }
 
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(limit);
         let total = results.len();
         Ok(SearchResults { results, total })

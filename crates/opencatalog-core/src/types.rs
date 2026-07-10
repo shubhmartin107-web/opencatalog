@@ -398,7 +398,9 @@ pub struct PaginationParams {
     pub limit: u64,
 }
 
-fn default_limit() -> u64 { 50 }
+fn default_limit() -> u64 {
+    50
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PaginatedResponse<T: Serialize> {

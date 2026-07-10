@@ -11,22 +11,19 @@ pub struct OpenIngestCrawler;
 
 impl OpenIngestCrawler {
     pub async fn crawl(&self, config: &HashMap<String, String>) -> CatalogResult<CrawlResult> {
-        let base_url = config
-            .get("url")
-            .ok_or_else(|| CatalogError::InvalidInput("OpenIngest crawler requires 'url' config".into()))?;
+        let base_url = config.get("url").ok_or_else(|| {
+            CatalogError::InvalidInput("OpenIngest crawler requires 'url' config".into())
+        })?;
         let base = base_url.trim_end_matches('/');
 
         let client = reqwest::Client::new();
 
         // 1. List pipelines
-        let pipelines: Vec<serde_json::Value> = match client
-            .get(format!("{base}/api/v1/pipelines"))
-            .send()
-            .await
-        {
-            Ok(resp) if resp.status().is_success() => resp.json().await.unwrap_or_default(),
-            _ => vec![],
-        };
+        let pipelines: Vec<serde_json::Value> =
+            match client.get(format!("{base}/api/v1/pipelines")).send().await {
+                Ok(resp) if resp.status().is_success() => resp.json().await.unwrap_or_default(),
+                _ => vec![],
+            };
 
         let mut datasets = Vec::new();
         let mut lineage_edges = Vec::new();
@@ -53,7 +50,9 @@ impl OpenIngestCrawler {
 
             // Extract target info
             let target_type = detail["target"]["type"].as_str().unwrap_or("lakehouse");
-            let target_table = detail["target"]["table"].as_str().unwrap_or("unknown_target");
+            let target_table = detail["target"]["table"]
+                .as_str()
+                .unwrap_or("unknown_target");
 
             // Extract schema
             let source_cols = extract_schema(&detail["source"]["columns"]);
@@ -168,7 +167,11 @@ fn extract_schema(columns_val: &serde_json::Value) -> Vec<Column> {
                     classification: col["classification"].as_str().map(String::from),
                     tags: col["tags"]
                         .as_array()
-                        .map(|t| t.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+                        .map(|t| {
+                            t.iter()
+                                .filter_map(|v| v.as_str().map(String::from))
+                                .collect()
+                        })
                         .unwrap_or_default(),
                     glossary_term_id: None,
                     metadata: std::collections::HashMap::new(),

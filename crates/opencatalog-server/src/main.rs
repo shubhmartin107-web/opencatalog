@@ -4,14 +4,10 @@ use axum::{
     Router,
     extract::Extension,
     middleware,
-    routing::{get, post, delete},
+    routing::{delete, get, post},
 };
 use opencatalog_server::{
-    config::ServerConfig,
-    mcp,
-    middleware::rate_limit::RateLimiter,
-    rest,
-    AppState,
+    AppState, config::ServerConfig, mcp, middleware::rate_limit::RateLimiter, rest,
 };
 use opencatalog_store::MemoryCatalogStore;
 use tower_http::cors::CorsLayer;
@@ -72,7 +68,10 @@ async fn main() -> anyhow::Result<()> {
             get(rest::datasources::get_datasource).delete(rest::datasources::delete_datasource),
         )
         .route("/api/v1/datasets", get(rest::datasets::list_datasets))
-        .route("/api/v1/datasets/search", get(rest::datasets::search_datasets))
+        .route(
+            "/api/v1/datasets/search",
+            get(rest::datasets::search_datasets),
+        )
         .route("/api/v1/datasets/{id}", get(rest::datasets::get_dataset))
         .route(
             "/api/v1/datasets/{id}/lineage",
@@ -103,7 +102,10 @@ async fn main() -> anyhow::Result<()> {
             post(rest::crawls::trigger_crawl),
         )
         .route("/api/v1/search", get(rest::search::search))
-        .route("/api/v1/lineage", post(rest::crawls::ingest_openlineage_event))
+        .route(
+            "/api/v1/lineage",
+            post(rest::crawls::ingest_openlineage_event),
+        )
         .route("/api/v1/audit", get(rest::audit::list_audit_entries))
         .route("/api/v1/metrics", get(rest::metrics::get_metrics))
         .route("/mcp", post(mcp::handler::handle_mcp))

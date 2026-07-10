@@ -30,7 +30,11 @@ pub struct UpdateDatasourceRequest {
 pub async fn list_datasources(
     Extension(state): Extension<Arc<AppState>>,
 ) -> Result<Json<PaginatedResponse<DataSource>>, StatusCode> {
-    let sources = state.store.list_datasources().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let sources = state
+        .store
+        .list_datasources()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(sources))
 }
 
@@ -68,7 +72,11 @@ pub async fn get_datasource(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<DataSource>, StatusCode> {
-    let ds = state.store.get_datasource(id).await.map_err(|_| StatusCode::NOT_FOUND)?;
+    let ds = state
+        .store
+        .get_datasource(id)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
     Ok(Json(ds))
 }
 
@@ -76,6 +84,10 @@ pub async fn delete_datasource(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
-    state.store.delete_datasource(id).await.map_err(|_| StatusCode::NOT_FOUND)?;
+    state
+        .store
+        .delete_datasource(id)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
     Ok(StatusCode::NO_CONTENT)
 }

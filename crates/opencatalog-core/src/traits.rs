@@ -20,8 +20,16 @@ pub trait CatalogStore: Send + Sync {
     async fn create_dataset(&self, ds: Dataset) -> CatalogResult<Dataset>;
     async fn get_dataset(&self, id: Uuid) -> CatalogResult<Dataset>;
     async fn get_dataset_by_name(&self, name: &str) -> CatalogResult<Dataset>;
-    async fn list_datasets(&self, datasource_id: Option<Uuid>, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<Dataset>>;
-    async fn search_datasets(&self, query: &str, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<Dataset>>;
+    async fn list_datasets(
+        &self,
+        datasource_id: Option<Uuid>,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<Dataset>>;
+    async fn search_datasets(
+        &self,
+        query: &str,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<Dataset>>;
     async fn update_dataset(&self, ds: Dataset) -> CatalogResult<Dataset>;
     async fn delete_dataset(&self, id: Uuid) -> CatalogResult<()>;
 
@@ -31,16 +39,33 @@ pub trait CatalogStore: Send + Sync {
 
     // Metadata
     async fn set_metadata(&self, entry: MetadataEntry) -> CatalogResult<()>;
-    async fn get_metadata(&self, dataset_id: Uuid, column_id: Option<Uuid>) -> CatalogResult<HashMap<String, String>>;
-    async fn delete_metadata(&self, dataset_id: Uuid, key: &str, column_id: Option<Uuid>) -> CatalogResult<()>;
+    async fn get_metadata(
+        &self,
+        dataset_id: Uuid,
+        column_id: Option<Uuid>,
+    ) -> CatalogResult<HashMap<String, String>>;
+    async fn delete_metadata(
+        &self,
+        dataset_id: Uuid,
+        key: &str,
+        column_id: Option<Uuid>,
+    ) -> CatalogResult<()>;
 
     // Audit
     async fn append_audit_entry(&self, entry: AuditEntry) -> CatalogResult<()>;
-    async fn list_audit_entries(&self, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<AuditEntry>>;
+    async fn list_audit_entries(
+        &self,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<AuditEntry>>;
 
     // Schema Versions
     async fn get_schema_versions(&self, dataset_id: Uuid) -> CatalogResult<Vec<SchemaVersion>>;
-    async fn diff_schema(&self, dataset_id: Uuid, from_version: i32, to_version: i32) -> CatalogResult<String>;
+    async fn diff_schema(
+        &self,
+        dataset_id: Uuid,
+        from_version: i32,
+        to_version: i32,
+    ) -> CatalogResult<String>;
 
     // Lineage
     async fn add_lineage_node(&self, node: LineageNode) -> CatalogResult<LineageNode>;
@@ -62,7 +87,10 @@ pub trait CatalogStore: Send + Sync {
     // Glossary
     async fn create_glossary_term(&self, term: GlossaryTerm) -> CatalogResult<GlossaryTerm>;
     async fn get_glossary_term(&self, id: Uuid) -> CatalogResult<GlossaryTerm>;
-    async fn list_glossary_terms(&self, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<GlossaryTerm>>;
+    async fn list_glossary_terms(
+        &self,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<GlossaryTerm>>;
     async fn update_glossary_term(&self, term: GlossaryTerm) -> CatalogResult<GlossaryTerm>;
     async fn delete_glossary_term(&self, id: Uuid) -> CatalogResult<()>;
     async fn create_term_mapping(&self, mapping: TermMapping) -> CatalogResult<TermMapping>;
@@ -71,7 +99,10 @@ pub trait CatalogStore: Send + Sync {
     // Policies
     async fn create_policy(&self, policy: Policy) -> CatalogResult<Policy>;
     async fn get_policy(&self, id: Uuid) -> CatalogResult<Policy>;
-    async fn list_policies(&self, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<Policy>>;
+    async fn list_policies(
+        &self,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<Policy>>;
     async fn update_policy(&self, policy: Policy) -> CatalogResult<Policy>;
     async fn delete_policy(&self, id: Uuid) -> CatalogResult<()>;
     async fn get_active_policies(&self) -> CatalogResult<Vec<Policy>>;
@@ -79,7 +110,11 @@ pub trait CatalogStore: Send + Sync {
     // Crawls
     async fn create_crawl_run(&self, run: CrawlRun) -> CatalogResult<CrawlRun>;
     async fn update_crawl_run(&self, run: CrawlRun) -> CatalogResult<CrawlRun>;
-    async fn list_crawl_runs(&self, datasource_id: Uuid, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<CrawlRun>>;
+    async fn list_crawl_runs(
+        &self,
+        datasource_id: Uuid,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<CrawlRun>>;
 
     // Search
     async fn search(&self, query: &str, limit: usize) -> CatalogResult<SearchResults>;
@@ -109,10 +144,7 @@ pub struct CrawlResult {
 
 #[async_trait]
 pub trait PolicyEngine: Send + Sync {
-    async fn evaluate(
-        &self,
-        request: &PolicyEvalRequest,
-    ) -> CatalogResult<PolicyEvalResult>;
+    async fn evaluate(&self, request: &PolicyEvalRequest) -> CatalogResult<PolicyEvalResult>;
 }
 
 #[async_trait]

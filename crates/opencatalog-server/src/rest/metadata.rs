@@ -28,10 +28,7 @@ pub async fn set_dataset_metadata(
         .set_metadata(entry)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    Ok((
-        StatusCode::OK,
-        Json(serde_json::json!({"status": "ok"})),
-    ))
+    Ok((StatusCode::OK, Json(serde_json::json!({"status": "ok"}))))
 }
 
 pub async fn get_dataset_metadata(

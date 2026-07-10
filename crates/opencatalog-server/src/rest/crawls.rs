@@ -1,6 +1,10 @@
 use std::sync::Arc;
 
-use axum::{Json, extract::{Extension, Path}, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Extension, Path},
+    http::StatusCode,
+};
 use opencatalog_core::traits::CatalogStore;
 use opencatalog_core::types::{CrawlRun, OpenLineageEvent};
 use uuid::Uuid;
@@ -11,7 +15,11 @@ pub async fn trigger_crawl(
     Extension(state): Extension<Arc<AppState>>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<CrawlRun>, StatusCode> {
-    let ds = state.store.get_datasource(id).await.map_err(|_| StatusCode::NOT_FOUND)?;
+    let ds = state
+        .store
+        .get_datasource(id)
+        .await
+        .map_err(|_| StatusCode::NOT_FOUND)?;
     let run = state
         .crawler_registry
         .crawl_and_persist(&ds, &state.store)
@@ -30,10 +38,14 @@ pub async fn ingest_openlineage_event(
     Json(event): Json<OpenLineageEvent>,
 ) -> Result<StatusCode, StatusCode> {
     // Store the event
-    state.store.ingest_openlineage_event(event).await.map_err(|e| {
-        tracing::error!("Failed to ingest OpenLineage event: {e}");
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    state
+        .store
+        .ingest_openlineage_event(event)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to ingest OpenLineage event: {e}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     Ok(StatusCode::ACCEPTED)
 }

@@ -29,7 +29,12 @@ impl DataScanner {
             let lower_name = column.name.to_lowercase();
             let lower_type = column.column_type.to_lowercase();
 
-            let classification = classify_column(&lower_name, &lower_type, &name_classifiers, &type_classifiers);
+            let classification = classify_column(
+                &lower_name,
+                &lower_type,
+                &name_classifiers,
+                &type_classifiers,
+            );
 
             if let Some(class) = classification {
                 let mut updated = column.clone();
@@ -38,7 +43,10 @@ impl DataScanner {
                 let mut meta = updated.metadata.clone();
                 meta.insert("scanned_by".into(), "datascan".into());
                 meta.insert("scan_timestamp".into(), chrono::Utc::now().to_rfc3339());
-                meta.insert("scan_source_type".into(), datasource.source_type.to_string());
+                meta.insert(
+                    "scan_source_type".into(),
+                    datasource.source_type.to_string(),
+                );
                 updated.metadata = meta;
 
                 updated_columns.push(updated);
@@ -63,31 +71,71 @@ impl DataScanner {
 fn build_name_classifiers() -> Vec<Classifier> {
     vec![
         (patterns(&["email", "e-mail"]), "pii.email".into()),
-        (patterns(&["ssn", "social_security", "socialsecurity"]), "pii.ssn".into()),
-        (patterns(&["phone", "telephone", "mobile", "cell"]), "pii.phone".into()),
-        (patterns(&["credit_card", "cc_", "card_number", "ccnum"]), "pii.credit_card".into()),
-        (patterns(&["password", "pwd", "secret"]), "pii.credential".into()),
-        (patterns(&["name", "full_name", "first_name", "last_name", "given_name", "surname"]), "pii.name".into()),
-        (patterns(&["address", "street", "city", "state", "zip", "postal"]), "pii.address".into()),
-        (patterns(&["birth", "dob", "birth_date", "date_of_birth"]), "pii.birth_date".into()),
-        (patterns(&["^ip$", "^ip_", "_ip$", "ip_address"]), "pii.ip".into()),
-        (patterns(&["username", "user_name", "login"]), "pii.username".into()),
-        (patterns(&["token", "auth_", "api_key", "api_secret", "apikey"]), "pii.auth_token".into()),
-    ]
-}
-
-fn build_type_classifiers() -> Vec<(Vec<Regex>, Vec<Regex>, String)> {
-    vec![
         (
-            patterns(&["varchar\\(255\\)", "text", "character varying"]),
-            patterns(&["email", "ssn", "password", "pwd", "secret", "phone", "credit", "ip", "address", "birth", "dob"]),
-            "pii.sensitive_text".into(),
+            patterns(&["ssn", "social_security", "socialsecurity"]),
+            "pii.ssn".into(),
+        ),
+        (
+            patterns(&["phone", "telephone", "mobile", "cell"]),
+            "pii.phone".into(),
+        ),
+        (
+            patterns(&["credit_card", "cc_", "card_number", "ccnum"]),
+            "pii.credit_card".into(),
+        ),
+        (
+            patterns(&["password", "pwd", "secret"]),
+            "pii.credential".into(),
+        ),
+        (
+            patterns(&[
+                "name",
+                "full_name",
+                "first_name",
+                "last_name",
+                "given_name",
+                "surname",
+            ]),
+            "pii.name".into(),
+        ),
+        (
+            patterns(&["address", "street", "city", "state", "zip", "postal"]),
+            "pii.address".into(),
+        ),
+        (
+            patterns(&["birth", "dob", "birth_date", "date_of_birth"]),
+            "pii.birth_date".into(),
+        ),
+        (
+            patterns(&["^ip$", "^ip_", "_ip$", "ip_address"]),
+            "pii.ip".into(),
+        ),
+        (
+            patterns(&["username", "user_name", "login"]),
+            "pii.username".into(),
+        ),
+        (
+            patterns(&["token", "auth_", "api_key", "api_secret", "apikey"]),
+            "pii.auth_token".into(),
         ),
     ]
 }
 
+fn build_type_classifiers() -> Vec<(Vec<Regex>, Vec<Regex>, String)> {
+    vec![(
+        patterns(&["varchar\\(255\\)", "text", "character varying"]),
+        patterns(&[
+            "email", "ssn", "password", "pwd", "secret", "phone", "credit", "ip", "address",
+            "birth", "dob",
+        ]),
+        "pii.sensitive_text".into(),
+    )]
+}
+
 fn patterns(list: &[&str]) -> Vec<Regex> {
-    list.iter().map(|p| Regex::new(&format!("(?i){p}")).unwrap()).collect()
+    list.iter()
+        .map(|p| Regex::new(&format!("(?i){p}")).unwrap())
+        .collect()
 }
 
 fn classify_column(

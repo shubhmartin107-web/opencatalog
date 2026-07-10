@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use axum::{Json, extract::Extension, http::StatusCode};
-use serde::{Deserialize, Serialize};
 use opencatalog_core::traits::{CatalogStore, LineageDirection};
 use opencatalog_core::types::*;
+use serde::{Deserialize, Serialize};
 
 use crate::AppState;
 
@@ -66,21 +66,41 @@ fn get_id(params: &serde_json::Value, key: &str) -> Result<uuid::Uuid, String> {
         .ok_or_else(|| format!("Missing or invalid '{key}'"))
 }
 
-async fn handle_search(state: &AppState, params: &serde_json::Value) -> Result<serde_json::Value, String> {
-    let query = params.get("query").and_then(|v| v.as_str()).ok_or("Missing 'query'")?;
-    let results = state.store.search(query, 20).await.map_err(|e| format!("Search failed: {e}"))?;
+async fn handle_search(
+    state: &AppState,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let query = params
+        .get("query")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'query'")?;
+    let results = state
+        .store
+        .search(query, 20)
+        .await
+        .map_err(|e| format!("Search failed: {e}"))?;
     serde_json::to_value(results).map_err(|e| format!("Serialize error: {e}"))
 }
 
-async fn handle_describe(state: &AppState, params: &serde_json::Value) -> Result<serde_json::Value, String> {
+async fn handle_describe(
+    state: &AppState,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
     let id = get_id(params, "dataset_id")?;
-    let mut ds = state.store.get_dataset(id).await.map_err(|e| format!("Dataset not found: {e}"))?;
+    let mut ds = state
+        .store
+        .get_dataset(id)
+        .await
+        .map_err(|e| format!("Dataset not found: {e}"))?;
     let cols = state.store.get_columns(id).await.unwrap_or_default();
     ds.schema = cols;
     serde_json::to_value(ds).map_err(|e| format!("Serialize error: {e}"))
 }
 
-async fn handle_lineage(state: &AppState, params: &serde_json::Value) -> Result<serde_json::Value, String> {
+async fn handle_lineage(
+    state: &AppState,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
     let id = get_id(params, "dataset_id")?;
     let direction = params
         .get("direction")
@@ -91,19 +111,39 @@ async fn handle_lineage(state: &AppState, params: &serde_json::Value) -> Result<
         "downstream" => LineageDirection::Downstream,
         _ => LineageDirection::Both,
     };
-    let lineage = state.store.get_lineage(id, dir).await.map_err(|e| format!("Lineage error: {e}"))?;
+    let lineage = state
+        .store
+        .get_lineage(id, dir)
+        .await
+        .map_err(|e| format!("Lineage error: {e}"))?;
     serde_json::to_value(lineage).map_err(|e| format!("Serialize error: {e}"))
 }
 
 async fn handle_glossary_list(state: &AppState) -> Result<serde_json::Value, String> {
-    let pagination = opencatalog_core::types::PaginationParams { offset: 0, limit: 1000 };
-    let terms = state.store.list_glossary_terms(&pagination).await.map_err(|e| format!("Error: {e}"))?;
+    let pagination = opencatalog_core::types::PaginationParams {
+        offset: 0,
+        limit: 1000,
+    };
+    let terms = state
+        .store
+        .list_glossary_terms(&pagination)
+        .await
+        .map_err(|e| format!("Error: {e}"))?;
     serde_json::to_value(terms).map_err(|e| format!("Serialize error: {e}"))
 }
 
-async fn handle_glossary_create(state: &AppState, params: &serde_json::Value) -> Result<serde_json::Value, String> {
-    let name = params.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-    let desc = params.get("description").and_then(|v| v.as_str()).ok_or("Missing 'description'")?;
+async fn handle_glossary_create(
+    state: &AppState,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let name = params
+        .get("name")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'name'")?;
+    let desc = params
+        .get("description")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'description'")?;
     let domain = params.get("domain").and_then(|v| v.as_str());
 
     let term = GlossaryTerm {
@@ -120,25 +160,55 @@ async fn handle_glossary_create(state: &AppState, params: &serde_json::Value) ->
         updated_at: chrono::Utc::now(),
     };
 
-    let created = state.store.create_glossary_term(term).await.map_err(|e| format!("Error: {e}"))?;
+    let created = state
+        .store
+        .create_glossary_term(term)
+        .await
+        .map_err(|e| format!("Error: {e}"))?;
     serde_json::to_value(created).map_err(|e| format!("Serialize error: {e}"))
 }
 
 async fn handle_policy_list(state: &AppState) -> Result<serde_json::Value, String> {
-    let pagination = opencatalog_core::types::PaginationParams { offset: 0, limit: 1000 };
-    let policies = state.store.list_policies(&pagination).await.map_err(|e| format!("Error: {e}"))?;
+    let pagination = opencatalog_core::types::PaginationParams {
+        offset: 0,
+        limit: 1000,
+    };
+    let policies = state
+        .store
+        .list_policies(&pagination)
+        .await
+        .map_err(|e| format!("Error: {e}"))?;
     serde_json::to_value(policies).map_err(|e| format!("Serialize error: {e}"))
 }
 
-async fn handle_policy_create(state: &AppState, params: &serde_json::Value) -> Result<serde_json::Value, String> {
-    let name = params.get("name").and_then(|v| v.as_str()).ok_or("Missing 'name'")?;
-    let ptype = params.get("policy_type").and_then(|v| v.as_str()).ok_or("Missing 'policy_type'")?;
-    let dataset_pattern = params.get("dataset_pattern").and_then(|v| v.as_str()).ok_or("Missing 'dataset_pattern'")?;
-    let action_str = params.get("action").and_then(|v| v.as_str()).ok_or("Missing 'action'")?;
+async fn handle_policy_create(
+    state: &AppState,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let name = params
+        .get("name")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'name'")?;
+    let ptype = params
+        .get("policy_type")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'policy_type'")?;
+    let dataset_pattern = params
+        .get("dataset_pattern")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'dataset_pattern'")?;
+    let action_str = params
+        .get("action")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'action'")?;
     let roles: Vec<String> = params
         .get("roles")
         .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        })
         .ok_or("Missing 'roles'")?;
 
     let policy_type = match ptype {
@@ -174,37 +244,78 @@ async fn handle_policy_create(state: &AppState, params: &serde_json::Value) -> R
         updated_at: chrono::Utc::now(),
     };
 
-    let created = state.store.create_policy(policy).await.map_err(|e| format!("Error: {e}"))?;
+    let created = state
+        .store
+        .create_policy(policy)
+        .await
+        .map_err(|e| format!("Error: {e}"))?;
     serde_json::to_value(created).map_err(|e| format!("Serialize error: {e}"))
 }
 
-async fn handle_crawl(state: &AppState, params: &serde_json::Value) -> Result<serde_json::Value, String> {
+async fn handle_crawl(
+    state: &AppState,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
     let id = get_id(params, "datasource_id")?;
-    let ds = state.store.get_datasource(id).await.map_err(|e| format!("Datasource not found: {e}"))?;
+    let ds = state
+        .store
+        .get_datasource(id)
+        .await
+        .map_err(|e| format!("Datasource not found: {e}"))?;
 
-    let run = state.crawler_registry.crawl_and_persist(&ds, &state.store).await.map_err(|e| format!("Crawl failed: {e}"))?;
+    let run = state
+        .crawler_registry
+        .crawl_and_persist(&ds, &state.store)
+        .await
+        .map_err(|e| format!("Crawl failed: {e}"))?;
     serde_json::to_value(run).map_err(|e| format!("Serialize error: {e}"))
 }
 
-async fn handle_doc_generate(state: &AppState, params: &serde_json::Value) -> Result<serde_json::Value, String> {
+async fn handle_doc_generate(
+    state: &AppState,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
     let id = get_id(params, "dataset_id")?;
-    let ds = state.store.get_dataset(id).await.map_err(|e| format!("Dataset not found: {e}"))?;
+    let ds = state
+        .store
+        .get_dataset(id)
+        .await
+        .map_err(|e| format!("Dataset not found: {e}"))?;
 
     if let Some(ref llm) = state.llm {
-        let docs = llm.generate_documentation(&ds).await.map_err(|e| format!("LLM error: {e}"))?;
+        let docs = llm
+            .generate_documentation(&ds)
+            .await
+            .map_err(|e| format!("LLM error: {e}"))?;
         serde_json::to_value(docs).map_err(|e| format!("Serialize error: {e}"))
     } else {
         Err("LLM not configured".into())
     }
 }
 
-async fn handle_semantic_search(state: &AppState, params: &serde_json::Value) -> Result<serde_json::Value, String> {
-    let query = params.get("query").and_then(|v| v.as_str()).ok_or("Missing 'query'")?;
+async fn handle_semantic_search(
+    state: &AppState,
+    params: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let query = params
+        .get("query")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'query'")?;
 
     let llm = state.llm.as_ref().ok_or("LLM not configured")?;
-    let pagination = opencatalog_core::types::PaginationParams { offset: 0, limit: 1000 };
-    let datasets = state.store.list_datasets(None, &pagination).await.map_err(|e| format!("Error: {e}"))?;
-    let results = llm.semantic_search(query, &datasets.data).await.map_err(|e| format!("LLM error: {e}"))?;
+    let pagination = opencatalog_core::types::PaginationParams {
+        offset: 0,
+        limit: 1000,
+    };
+    let datasets = state
+        .store
+        .list_datasets(None, &pagination)
+        .await
+        .map_err(|e| format!("Error: {e}"))?;
+    let results = llm
+        .semantic_search(query, &datasets.data)
+        .await
+        .map_err(|e| format!("LLM error: {e}"))?;
 
     let json_results: Vec<serde_json::Value> = results
         .into_iter()

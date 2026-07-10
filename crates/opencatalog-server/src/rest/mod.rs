@@ -1,7 +1,7 @@
 pub mod audit;
 pub mod crawls;
-pub mod datasources;
 pub mod datasets;
+pub mod datasources;
 pub mod glossary;
 pub mod health;
 pub mod metadata;

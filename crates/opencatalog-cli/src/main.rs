@@ -1,7 +1,10 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "opencatalog", about = "OpenCatalog — Automated Metadata Catalog")]
+#[command(
+    name = "opencatalog",
+    about = "OpenCatalog — Automated Metadata Catalog"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
@@ -23,18 +26,14 @@ enum Command {
         url: String,
     },
     /// Trigger a crawl for a data source
-    Crawl {
-        datasource_id: String,
-    },
+    Crawl { datasource_id: String },
     /// List all datasets
     ListDatasets {
         #[arg(short, long)]
         datasource_id: Option<String>,
     },
     /// Get lineage for a dataset
-    Lineage {
-        dataset_id: String,
-    },
+    Lineage { dataset_id: String },
     /// List all governance policies
     ListPolicies,
     /// Create a masking policy
@@ -52,9 +51,7 @@ enum Command {
     /// List business glossary terms
     ListGlossary,
     /// Search the catalog
-    Search {
-        query: String,
-    },
+    Search { query: String },
 }
 
 #[tokio::main]
@@ -65,24 +62,43 @@ async fn main() -> anyhow::Result<()> {
 
     match cli.command {
         Command::ListSources => {
-            let resp = client.get(format!("{base}/api/v1/datasources")).send().await?;
+            let resp = client
+                .get(format!("{base}/api/v1/datasources"))
+                .send()
+                .await?;
             let sources: Vec<serde_json::Value> = resp.json().await?;
             for s in &sources {
-                println!("[{}] {} ({})", s["id"].as_str().unwrap_or("?"), s["name"].as_str().unwrap_or("?"), s["source_type"].as_str().unwrap_or("?"));
+                println!(
+                    "[{}] {} ({})",
+                    s["id"].as_str().unwrap_or("?"),
+                    s["name"].as_str().unwrap_or("?"),
+                    s["source_type"].as_str().unwrap_or("?")
+                );
             }
         }
-        Command::RegisterSource { name, source_type, url } => {
+        Command::RegisterSource {
+            name,
+            source_type,
+            url,
+        } => {
             let body = serde_json::json!({
                 "name": name,
                 "source_type": source_type,
                 "connection_config": { "url": url },
             });
-            let resp = client.post(format!("{base}/api/v1/datasources")).json(&body).send().await?;
+            let resp = client
+                .post(format!("{base}/api/v1/datasources"))
+                .json(&body)
+                .send()
+                .await?;
             let result: serde_json::Value = resp.json().await?;
             println!("Registered: {}", serde_json::to_string_pretty(&result)?);
         }
         Command::Crawl { datasource_id } => {
-            let resp = client.post(format!("{base}/api/v1/datasources/{datasource_id}/crawl")).send().await?;
+            let resp = client
+                .post(format!("{base}/api/v1/datasources/{datasource_id}/crawl"))
+                .send()
+                .await?;
             let result: serde_json::Value = resp.json().await?;
             println!("Crawl result: {}", serde_json::to_string_pretty(&result)?);
         }
@@ -94,11 +110,19 @@ async fn main() -> anyhow::Result<()> {
             let resp = client.get(&url).send().await?;
             let datasets: Vec<serde_json::Value> = resp.json().await?;
             for ds in &datasets {
-                println!("[{}] {} ({} cols)", ds["id"].as_str().unwrap_or("?"), ds["name"].as_str().unwrap_or("?"), ds["schema"].as_array().map(|a| a.len()).unwrap_or(0));
+                println!(
+                    "[{}] {} ({} cols)",
+                    ds["id"].as_str().unwrap_or("?"),
+                    ds["name"].as_str().unwrap_or("?"),
+                    ds["schema"].as_array().map(|a| a.len()).unwrap_or(0)
+                );
             }
         }
         Command::Lineage { dataset_id } => {
-            let resp = client.get(format!("{base}/api/v1/datasets/{dataset_id}/lineage")).send().await?;
+            let resp = client
+                .get(format!("{base}/api/v1/datasets/{dataset_id}/lineage"))
+                .send()
+                .await?;
             let result: serde_json::Value = resp.json().await?;
             println!("Lineage: {}", serde_json::to_string_pretty(&result)?);
         }
@@ -107,7 +131,13 @@ async fn main() -> anyhow::Result<()> {
             // Note: policies endpoint not yet implemented in server, will add
             println!("Policies: {}", resp.text().await?);
         }
-        Command::CreatePolicy { name, policy_type, dataset_pattern, action, roles } => {
+        Command::CreatePolicy {
+            name,
+            policy_type,
+            dataset_pattern,
+            action,
+            roles,
+        } => {
             let roles_vec: Vec<String> = roles.split(',').map(|s| s.trim().into()).collect();
             let body = serde_json::json!({
                 "name": name,
@@ -116,7 +146,11 @@ async fn main() -> anyhow::Result<()> {
                 "action": action,
                 "roles": roles_vec,
             });
-            let resp = client.post(format!("{base}/api/v1/policies")).json(&body).send().await?;
+            let resp = client
+                .post(format!("{base}/api/v1/policies"))
+                .json(&body)
+                .send()
+                .await?;
             let result: serde_json::Value = resp.json().await?;
             println!("Created: {}", serde_json::to_string_pretty(&result)?);
         }
@@ -125,7 +159,10 @@ async fn main() -> anyhow::Result<()> {
             println!("Glossary: {}", resp.text().await?);
         }
         Command::Search { query } => {
-            let resp = client.get(format!("{base}/api/v1/search?q={query}")).send().await?;
+            let resp = client
+                .get(format!("{base}/api/v1/search?q={query}"))
+                .send()
+                .await?;
             let result: serde_json::Value = resp.json().await?;
             println!("Results: {}", serde_json::to_string_pretty(&result)?);
         }

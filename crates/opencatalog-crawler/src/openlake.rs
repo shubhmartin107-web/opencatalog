@@ -11,9 +11,9 @@ pub struct OpenLakeCrawler;
 
 impl OpenLakeCrawler {
     pub async fn crawl(&self, config: &HashMap<String, String>) -> CatalogResult<CrawlResult> {
-        let base_url = config
-            .get("url")
-            .ok_or_else(|| CatalogError::InvalidInput("OpenLake crawler requires 'url' config".into()))?;
+        let base_url = config.get("url").ok_or_else(|| {
+            CatalogError::InvalidInput("OpenLake crawler requires 'url' config".into())
+        })?;
 
         let client = reqwest::Client::new();
 
@@ -41,20 +41,18 @@ impl OpenLakeCrawler {
 
         // 2. For each namespace, list tables
         for namespace in &namespaces {
-            let tables_url =
-                format!("{}/api/v1/namespaces/{}/tables", base_url.trim_end_matches('/'), namespace);
+            let tables_url = format!(
+                "{}/api/v1/namespaces/{}/tables",
+                base_url.trim_end_matches('/'),
+                namespace
+            );
             let tables: Vec<serde_json::Value> = match client.get(&tables_url).send().await {
-                Ok(resp) if resp.status().is_success() => {
-                    resp.json().await.unwrap_or_default()
-                }
+                Ok(resp) if resp.status().is_success() => resp.json().await.unwrap_or_default(),
                 _ => vec![],
             };
 
             for table_val in tables {
-                let table_name = table_val["name"]
-                    .as_str()
-                    .unwrap_or("unknown")
-                    .to_string();
+                let table_name = table_val["name"].as_str().unwrap_or("unknown").to_string();
                 let full_name = format!("{namespace}.{table_name}");
 
                 // 3. Get table details including schema
@@ -65,7 +63,11 @@ impl OpenLakeCrawler {
                     &table_name
                 );
 
-                let (schema_cols, location, _snapshot_id) = match client.get(&detail_url).send().await {
+                let (schema_cols, location, _snapshot_id) = match client
+                    .get(&detail_url)
+                    .send()
+                    .await
+                {
                     Ok(resp) if resp.status().is_success() => {
                         let detail: serde_json::Value = resp.json().await.unwrap_or_default();
                         let loc = detail["metadata-location"].as_str().map(String::from);

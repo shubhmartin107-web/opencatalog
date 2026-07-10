@@ -7,8 +7,8 @@ use opencatalog_core::error::{CatalogError, CatalogResult};
 use opencatalog_core::traits::{CatalogStore, LineageDirection};
 use opencatalog_core::types::*;
 use parking_lot::RwLock;
-use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::Direction;
+use petgraph::graph::{DiGraph, NodeIndex};
 use uuid::Uuid;
 
 type Graph = DiGraph<LineageNode, LineageEdge>;
@@ -57,7 +57,10 @@ impl CatalogStore for MemoryCatalogStore {
         ds.updated_at = now;
         let mut inner = self.inner.write();
         if inner.datasources.values().any(|d| d.name == ds.name) {
-            return Err(CatalogError::AlreadyExists(format!("datasource '{}'", ds.name)));
+            return Err(CatalogError::AlreadyExists(format!(
+                "datasource '{}'",
+                ds.name
+            )));
         }
         inner.datasources.insert(ds.id, ds.clone());
         Ok(ds)
@@ -75,7 +78,12 @@ impl CatalogStore for MemoryCatalogStore {
     async fn list_datasources(&self) -> CatalogResult<PaginatedResponse<DataSource>> {
         let items: Vec<DataSource> = self.inner.read().datasources.values().cloned().collect();
         let total = items.len() as u64;
-        Ok(PaginatedResponse { data: items, total, offset: 0, limit: total.max(1) })
+        Ok(PaginatedResponse {
+            data: items,
+            total,
+            offset: 0,
+            limit: total.max(1),
+        })
     }
 
     async fn update_datasource(&self, mut ds: DataSource) -> CatalogResult<DataSource> {
@@ -108,7 +116,10 @@ impl CatalogStore for MemoryCatalogStore {
         }
         let mut inner = self.inner.write();
         if inner.datasets.values().any(|d| d.name == ds.name) {
-            return Err(CatalogError::AlreadyExists(format!("dataset '{}'", ds.name)));
+            return Err(CatalogError::AlreadyExists(format!(
+                "dataset '{}'",
+                ds.name
+            )));
         }
         let cols = ds.schema.clone();
         inner.datasets.insert(ds.id, ds.clone());
@@ -120,7 +131,11 @@ impl CatalogStore for MemoryCatalogStore {
             diff_from_previous: None,
             created_at: now,
         };
-        inner.schema_versions.entry(ds.id).or_default().push(schema_version);
+        inner
+            .schema_versions
+            .entry(ds.id)
+            .or_default()
+            .push(schema_version);
 
         inner.columns.insert(ds.id, cols);
         Ok(ds)
@@ -145,16 +160,29 @@ impl CatalogStore for MemoryCatalogStore {
             .ok_or_else(|| CatalogError::NotFound(format!("dataset '{name}'")))
     }
 
-    async fn list_datasets(&self, datasource_id: Option<Uuid>, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<Dataset>> {
+    async fn list_datasets(
+        &self,
+        datasource_id: Option<Uuid>,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<Dataset>> {
         let inner = self.inner.read();
         let items: Vec<Dataset> = match datasource_id {
-            Some(id) => inner.datasets.values().filter(|d| d.data_source_id == id).cloned().collect(),
+            Some(id) => inner
+                .datasets
+                .values()
+                .filter(|d| d.data_source_id == id)
+                .cloned()
+                .collect(),
             None => inner.datasets.values().cloned().collect(),
         };
         Ok(apply_paginated(items, pagination))
     }
 
-    async fn search_datasets(&self, query: &str, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<Dataset>> {
+    async fn search_datasets(
+        &self,
+        query: &str,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<Dataset>> {
         let q = query.to_lowercase();
         let inner = self.inner.read();
         let items: Vec<Dataset> = inner
@@ -162,7 +190,9 @@ impl CatalogStore for MemoryCatalogStore {
             .values()
             .filter(|d| {
                 d.name.to_lowercase().contains(&q)
-                    || d.description.as_deref().is_some_and(|s| s.to_lowercase().contains(&q))
+                    || d.description
+                        .as_deref()
+                        .is_some_and(|s| s.to_lowercase().contains(&q))
                     || d.tags.iter().any(|t| t.to_lowercase().contains(&q))
             })
             .cloned()
@@ -194,7 +224,11 @@ impl CatalogStore for MemoryCatalogStore {
             diff_from_previous: Some(diff),
             created_at: Utc::now(),
         };
-        inner.schema_versions.entry(ds.id).or_default().push(schema_version);
+        inner
+            .schema_versions
+            .entry(ds.id)
+            .or_default()
+            .push(schema_version);
 
         Ok(ds)
     }
@@ -242,7 +276,11 @@ impl CatalogStore for MemoryCatalogStore {
         Ok(())
     }
 
-    async fn get_metadata(&self, dataset_id: Uuid, column_id: Option<Uuid>) -> CatalogResult<HashMap<String, String>> {
+    async fn get_metadata(
+        &self,
+        dataset_id: Uuid,
+        column_id: Option<Uuid>,
+    ) -> CatalogResult<HashMap<String, String>> {
         Ok(self
             .inner
             .read()
@@ -252,7 +290,12 @@ impl CatalogStore for MemoryCatalogStore {
             .unwrap_or_default())
     }
 
-    async fn delete_metadata(&self, dataset_id: Uuid, key: &str, column_id: Option<Uuid>) -> CatalogResult<()> {
+    async fn delete_metadata(
+        &self,
+        dataset_id: Uuid,
+        key: &str,
+        column_id: Option<Uuid>,
+    ) -> CatalogResult<()> {
         let mut inner = self.inner.write();
         if let Some(map) = inner.metadata.get_mut(&(dataset_id, column_id)) {
             map.remove(key);
@@ -269,7 +312,10 @@ impl CatalogStore for MemoryCatalogStore {
         Ok(())
     }
 
-    async fn list_audit_entries(&self, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<AuditEntry>> {
+    async fn list_audit_entries(
+        &self,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<AuditEntry>> {
         let inner = self.inner.read();
         let items = inner.audit_entries.clone();
         Ok(apply_paginated(items, pagination))
@@ -286,12 +332,16 @@ impl CatalogStore for MemoryCatalogStore {
             .unwrap_or_default())
     }
 
-    async fn diff_schema(&self, dataset_id: Uuid, from_version: i32, to_version: i32) -> CatalogResult<String> {
+    async fn diff_schema(
+        &self,
+        dataset_id: Uuid,
+        from_version: i32,
+        to_version: i32,
+    ) -> CatalogResult<String> {
         let inner = self.inner.read();
-        let versions = inner
-            .schema_versions
-            .get(&dataset_id)
-            .ok_or_else(|| CatalogError::NotFound(format!("schema versions for dataset {dataset_id}")))?;
+        let versions = inner.schema_versions.get(&dataset_id).ok_or_else(|| {
+            CatalogError::NotFound(format!("schema versions for dataset {dataset_id}"))
+        })?;
 
         let from = versions
             .iter()
@@ -326,12 +376,16 @@ impl CatalogStore for MemoryCatalogStore {
             .lineage_node_map
             .get(&edge.source_node_id)
             .copied()
-            .ok_or_else(|| CatalogError::NotFound(format!("lineage node {}", edge.source_node_id)))?;
+            .ok_or_else(|| {
+                CatalogError::NotFound(format!("lineage node {}", edge.source_node_id))
+            })?;
         let dst = inner
             .lineage_node_map
             .get(&edge.target_node_id)
             .copied()
-            .ok_or_else(|| CatalogError::NotFound(format!("lineage node {}", edge.target_node_id)))?;
+            .ok_or_else(|| {
+                CatalogError::NotFound(format!("lineage node {}", edge.target_node_id))
+            })?;
         inner.lineage_graph.add_edge(src, dst, edge.clone());
         Ok(edge)
     }
@@ -365,12 +419,16 @@ impl CatalogStore for MemoryCatalogStore {
             nodes.push(inner.lineage_graph[idx].clone());
 
             let iter: Box<dyn Iterator<Item = _>> = match direction {
-                LineageDirection::Upstream => {
-                    Box::new(inner.lineage_graph.neighbors_directed(idx, Direction::Incoming))
-                }
-                LineageDirection::Downstream => {
-                    Box::new(inner.lineage_graph.neighbors_directed(idx, Direction::Outgoing))
-                }
+                LineageDirection::Upstream => Box::new(
+                    inner
+                        .lineage_graph
+                        .neighbors_directed(idx, Direction::Incoming),
+                ),
+                LineageDirection::Downstream => Box::new(
+                    inner
+                        .lineage_graph
+                        .neighbors_directed(idx, Direction::Outgoing),
+                ),
                 LineageDirection::Both => Box::new(
                     inner
                         .lineage_graph
@@ -408,8 +466,12 @@ impl CatalogStore for MemoryCatalogStore {
         let inner = self.inner.read();
         let mut results = Vec::new();
         for edge in inner.lineage_graph.edge_weights() {
-            let Some(&src_idx) = inner.lineage_node_map.get(&edge.source_node_id) else { continue };
-            let Some(&dst_idx) = inner.lineage_node_map.get(&edge.target_node_id) else { continue };
+            let Some(&src_idx) = inner.lineage_node_map.get(&edge.source_node_id) else {
+                continue;
+            };
+            let Some(&dst_idx) = inner.lineage_node_map.get(&edge.target_node_id) else {
+                continue;
+            };
             let src = &inner.lineage_graph[src_idx];
             let dst = &inner.lineage_graph[dst_idx];
             if dst.dataset_id == dataset_id
@@ -451,7 +513,10 @@ impl CatalogStore for MemoryCatalogStore {
         term.updated_at = now;
         let mut inner = self.inner.write();
         if inner.glossary_terms.values().any(|t| t.name == term.name) {
-            return Err(CatalogError::AlreadyExists(format!("glossary term '{}'", term.name)));
+            return Err(CatalogError::AlreadyExists(format!(
+                "glossary term '{}'",
+                term.name
+            )));
         }
         inner.glossary_terms.insert(term.id, term.clone());
         Ok(term)
@@ -466,7 +531,10 @@ impl CatalogStore for MemoryCatalogStore {
             .ok_or_else(|| CatalogError::NotFound(format!("glossary term {id}")))
     }
 
-    async fn list_glossary_terms(&self, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<GlossaryTerm>> {
+    async fn list_glossary_terms(
+        &self,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<GlossaryTerm>> {
         let inner = self.inner.read();
         let items: Vec<GlossaryTerm> = inner.glossary_terms.values().cloned().collect();
         Ok(apply_paginated(items, pagination))
@@ -519,7 +587,10 @@ impl CatalogStore for MemoryCatalogStore {
         policy.updated_at = now;
         let mut inner = self.inner.write();
         if inner.policies.values().any(|p| p.name == policy.name) {
-            return Err(CatalogError::AlreadyExists(format!("policy '{}'", policy.name)));
+            return Err(CatalogError::AlreadyExists(format!(
+                "policy '{}'",
+                policy.name
+            )));
         }
         inner.policies.insert(policy.id, policy.clone());
         Ok(policy)
@@ -534,7 +605,10 @@ impl CatalogStore for MemoryCatalogStore {
             .ok_or_else(|| CatalogError::NotFound(format!("policy {id}")))
     }
 
-    async fn list_policies(&self, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<Policy>> {
+    async fn list_policies(
+        &self,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<Policy>> {
         let inner = self.inner.read();
         let items: Vec<Policy> = inner.policies.values().cloned().collect();
         Ok(apply_paginated(items, pagination))
@@ -590,9 +664,17 @@ impl CatalogStore for MemoryCatalogStore {
         Err(CatalogError::NotFound(format!("crawl run {}", run.id)))
     }
 
-    async fn list_crawl_runs(&self, datasource_id: Uuid, pagination: &PaginationParams) -> CatalogResult<PaginatedResponse<CrawlRun>> {
+    async fn list_crawl_runs(
+        &self,
+        datasource_id: Uuid,
+        pagination: &PaginationParams,
+    ) -> CatalogResult<PaginatedResponse<CrawlRun>> {
         let inner = self.inner.read();
-        let items = inner.crawl_runs.get(&datasource_id).cloned().unwrap_or_default();
+        let items = inner
+            .crawl_runs
+            .get(&datasource_id)
+            .cloned()
+            .unwrap_or_default();
         Ok(apply_paginated(items, pagination))
     }
 
@@ -607,7 +689,11 @@ impl CatalogStore for MemoryCatalogStore {
                 1.0
             } else if ds.name.to_lowercase().contains(&q) {
                 0.8
-            } else if ds.description.as_deref().is_some_and(|s| s.to_lowercase().contains(&q)) {
+            } else if ds
+                .description
+                .as_deref()
+                .is_some_and(|s| s.to_lowercase().contains(&q))
+            {
                 0.6
             } else if ds.tags.iter().any(|t| t.to_lowercase().contains(&q)) {
                 0.5
@@ -628,7 +714,10 @@ impl CatalogStore for MemoryCatalogStore {
         for cols in inner.columns.values() {
             for col in cols {
                 if (col.name.to_lowercase().contains(&q)
-                    || col.description.as_deref().is_some_and(|s| s.to_lowercase().contains(&q)))
+                    || col
+                        .description
+                        .as_deref()
+                        .is_some_and(|s| s.to_lowercase().contains(&q)))
                     && let Some(ds) = inner.datasets.get(&col.dataset_id)
                 {
                     results.push(SearchResult {
@@ -661,7 +750,11 @@ impl CatalogStore for MemoryCatalogStore {
             }
         }
 
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.truncate(limit);
 
         let total = results.len();
@@ -691,7 +784,10 @@ impl CatalogStore for MemoryCatalogStore {
     }
 }
 
-fn apply_paginated<T: Clone + serde::Serialize>(items: Vec<T>, pagination: &PaginationParams) -> PaginatedResponse<T> {
+fn apply_paginated<T: Clone + serde::Serialize>(
+    items: Vec<T>,
+    pagination: &PaginationParams,
+) -> PaginatedResponse<T> {
     let total = items.len() as u64;
     let offset = pagination.offset;
     let limit = pagination.limit;
@@ -700,7 +796,12 @@ fn apply_paginated<T: Clone + serde::Serialize>(items: Vec<T>, pagination: &Pagi
         .skip(offset as usize)
         .take(limit as usize)
         .collect();
-    PaginatedResponse { data, total, offset, limit }
+    PaginatedResponse {
+        data,
+        total,
+        offset,
+        limit,
+    }
 }
 
 fn compute_schema_diff(from: &[Column], to: &[Column]) -> String {
@@ -750,7 +851,8 @@ fn compute_schema_diff(from: &[Column], to: &[Column]) -> String {
     }
 
     for col in to {
-        if let Some(&(old_type, old_null, old_pk, old_fk, _old_desc)) = from_map.get(col.name.as_str())
+        if let Some(&(old_type, old_null, old_pk, old_fk, _old_desc)) =
+            from_map.get(col.name.as_str())
         {
             let mut changed = false;
             let mut detail = String::new();
@@ -761,10 +863,7 @@ fn compute_schema_diff(from: &[Column], to: &[Column]) -> String {
             }
             if col.is_nullable != old_null {
                 changed = true;
-                detail.push_str(&format!(
-                    ", nullable: {} -> {}",
-                    old_null, col.is_nullable
-                ));
+                detail.push_str(&format!(", nullable: {} -> {}", old_null, col.is_nullable));
             }
             if col.is_primary_key != old_pk {
                 changed = true;

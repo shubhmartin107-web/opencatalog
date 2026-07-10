@@ -5,8 +5,8 @@ use uuid::Uuid;
 
 use crate::datascan::DataScanner;
 use crate::dbt::DbtCrawler;
-use crate::openlake::OpenLakeCrawler;
 use crate::openingest::OpenIngestCrawler;
+use crate::openlake::OpenLakeCrawler;
 
 pub struct CrawlerRegistry;
 
@@ -44,10 +44,9 @@ impl CrawlerRegistry {
                 let crawler = DbtCrawler;
                 crawler.crawl(&datasource.connection_config).await
             }
-            _ => Err(opencatalog_core::error::CatalogError::InvalidInput(format!(
-                "No crawler for source type: {}",
-                datasource.source_type
-            ))),
+            _ => Err(opencatalog_core::error::CatalogError::InvalidInput(
+                format!("No crawler for source type: {}", datasource.source_type),
+            )),
         };
 
         match crawl_result {
@@ -62,10 +61,7 @@ impl CrawlerRegistry {
                         // Run data scan to classify columns
                         let scanner = DataScanner;
                         if let Err(e) = scanner.scan(datasource, &created, store).await {
-                            tracing::warn!(
-                                "Data scan failed for dataset '{}': {e}",
-                                created.name
-                            );
+                            tracing::warn!("Data scan failed for dataset '{}': {e}", created.name);
                         }
                     }
                 }

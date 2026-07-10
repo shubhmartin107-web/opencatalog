@@ -52,28 +52,32 @@ pub struct DbtCrawler;
 
 impl DbtCrawler {
     pub async fn crawl(&self, config: &HashMap<String, String>) -> CatalogResult<CrawlResult> {
-        let manifest_path = config
-            .get("manifest_path")
-            .ok_or_else(|| CatalogError::InvalidInput("DBT crawler requires 'manifest_path' config".into()))?;
+        let manifest_path = config.get("manifest_path").ok_or_else(|| {
+            CatalogError::InvalidInput("DBT crawler requires 'manifest_path' config".into())
+        })?;
 
         let catalog_path = config.get("catalog_path");
 
         let content = std::fs::read_to_string(manifest_path)
             .map_err(|e| CatalogError::CrawlFailed(format!("Failed to read manifest file: {e}")))?;
 
-        let manifest: Manifest = serde_json::from_str(&content)
-            .map_err(|e| CatalogError::CrawlFailed(format!("Failed to parse manifest JSON: {e}")))?;
+        let manifest: Manifest = serde_json::from_str(&content).map_err(|e| {
+            CatalogError::CrawlFailed(format!("Failed to parse manifest JSON: {e}"))
+        })?;
 
         // Optionally read catalog.json for additional metadata
-        let catalog_columns: HashMap<String, HashMap<String, CatalogColumn>> = if let Some(cat_path) = catalog_path {
-            let cat_content = std::fs::read_to_string(cat_path)
-                .map_err(|e| CatalogError::CrawlFailed(format!("Failed to read catalog file: {e}")))?;
-            let catalog: Catalog = serde_json::from_str(&cat_content)
-                .map_err(|e| CatalogError::CrawlFailed(format!("Failed to parse catalog JSON: {e}")))?;
-            catalog.nodes
-        } else {
-            HashMap::new()
-        };
+        let catalog_columns: HashMap<String, HashMap<String, CatalogColumn>> =
+            if let Some(cat_path) = catalog_path {
+                let cat_content = std::fs::read_to_string(cat_path).map_err(|e| {
+                    CatalogError::CrawlFailed(format!("Failed to read catalog file: {e}"))
+                })?;
+                let catalog: Catalog = serde_json::from_str(&cat_content).map_err(|e| {
+                    CatalogError::CrawlFailed(format!("Failed to parse catalog JSON: {e}"))
+                })?;
+                catalog.nodes
+            } else {
+                HashMap::new()
+            };
 
         let mut datasets = Vec::new();
         let mut lineage_edges = Vec::new();
@@ -107,7 +111,10 @@ impl DbtCrawler {
 
             for (ordinal, (col_key, col_info)) in node.columns.iter().enumerate() {
                 let ordinal = ordinal as i32;
-                let data_type = col_info.data_type.clone().unwrap_or_else(|| "string".into());
+                let data_type = col_info
+                    .data_type
+                    .clone()
+                    .unwrap_or_else(|| "string".into());
                 let col_tags: Vec<String> = Vec::new();
 
                 // Enrich with catalog metadata if available
@@ -222,7 +229,11 @@ impl DbtCrawler {
                 for parent_key in &depends.nodes {
                     if let Some(parent_name) = node_datasets.get(parent_key) {
                         let parts: Vec<&str> = parent_name.splitn(3, '.').collect();
-                        let ns = if parts.len() >= 3 { parts[..parts.len()-1].join(".") } else { "default".into() };
+                        let ns = if parts.len() >= 3 {
+                            parts[..parts.len() - 1].join(".")
+                        } else {
+                            "default".into()
+                        };
                         inputs.push(OpenLineageDatasetRef {
                             namespace: ns,
                             name: parent_name.clone(),
@@ -233,7 +244,11 @@ impl DbtCrawler {
             }
 
             let parts: Vec<&str> = child_name.splitn(3, '.').collect();
-            let ns = if parts.len() >= 3 { parts[..parts.len()-1].join(".") } else { "default".into() };
+            let ns = if parts.len() >= 3 {
+                parts[..parts.len() - 1].join(".")
+            } else {
+                "default".into()
+            };
 
             let now = chrono::Utc::now();
             let event = OpenLineageEvent {

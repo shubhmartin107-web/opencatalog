@@ -80,11 +80,19 @@ impl OllamaClient {
     }
 
     /// Generates column descriptions for a dataset using the LLM.
-    pub async fn generate_documentation(&self, dataset: &Dataset) -> CatalogResult<HashMap<String, String>> {
+    pub async fn generate_documentation(
+        &self,
+        dataset: &Dataset,
+    ) -> CatalogResult<HashMap<String, String>> {
         let schema_desc: Vec<String> = dataset
             .schema
             .iter()
-            .map(|c| format!("  - {}: {} (nullable: {})", c.name, c.column_type, c.is_nullable))
+            .map(|c| {
+                format!(
+                    "  - {}: {} (nullable: {})",
+                    c.name, c.column_type, c.is_nullable
+                )
+            })
             .collect();
 
         let prompt = format!(

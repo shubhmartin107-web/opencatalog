@@ -14,19 +14,31 @@ pub fn suggest_glossary_terms(dataset: &Dataset) -> Vec<GlossaryTerm> {
 
         let suggestions_for_col: Vec<(&str, &str, &str)> = match () {
             _ if lower.contains("email") => {
-                vec![("Customer Email", "Email address of a customer", "Customer Data")]
+                vec![(
+                    "Customer Email",
+                    "Email address of a customer",
+                    "Customer Data",
+                )]
             }
             _ if lower.contains("phone") || lower.contains("telephone") => {
                 vec![("Phone Number", "Telephone contact number", "Customer Data")]
             }
             _ if lower.contains("ssn") || lower.contains("social_security") => {
-                vec![("Social Security Number", "Government-issued SSN identifier", "PII")]
+                vec![(
+                    "Social Security Number",
+                    "Government-issued SSN identifier",
+                    "PII",
+                )]
             }
             _ if lower.contains("credit") || lower.contains("card") => {
                 vec![("Payment Card", "Credit or debit card details", "Financial")]
             }
             _ if lower.contains("address") || lower.contains("street") => {
-                vec![("Physical Address", "Postal or street address", "Customer Data")]
+                vec![(
+                    "Physical Address",
+                    "Postal or street address",
+                    "Customer Data",
+                )]
             }
             _ if lower.contains("name") && !lower.contains("username") => {
                 vec![("Person Name", "Full name of an individual", "Customer Data")]
@@ -68,16 +80,16 @@ pub fn suggest_glossary_terms(dataset: &Dataset) -> Vec<GlossaryTerm> {
     suggestions
 }
 
-pub fn map_term_to_columns(
-    term: &GlossaryTerm,
-    dataset: &Dataset,
-) -> Vec<TermMapping> {
+pub fn map_term_to_columns(term: &GlossaryTerm, dataset: &Dataset) -> Vec<TermMapping> {
     let lower_name = term.name.to_lowercase();
     let mut mappings = Vec::new();
 
     for col in &dataset.schema {
         let col_lower = col.name.to_lowercase();
-        let should_map = term.synonyms.iter().any(|s| col_lower.contains(&s.to_lowercase()))
+        let should_map = term
+            .synonyms
+            .iter()
+            .any(|s| col_lower.contains(&s.to_lowercase()))
             || col_lower.contains(&lower_name)
             || lower_name.contains(&col_lower);
 

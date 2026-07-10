@@ -33,7 +33,11 @@ pub async fn list_glossary(
         offset: params.offset.unwrap_or(0),
         limit: params.limit.unwrap_or(50),
     };
-    let terms = state.store.list_glossary_terms(&pagination).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let terms = state
+        .store
+        .list_glossary_terms(&pagination)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(Json(terms))
 }
 
@@ -54,6 +58,10 @@ pub async fn create_glossary_term(
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
     };
-    let created = state.store.create_glossary_term(term).await.map_err(|_| StatusCode::CONFLICT)?;
+    let created = state
+        .store
+        .create_glossary_term(term)
+        .await
+        .map_err(|_| StatusCode::CONFLICT)?;
     Ok((StatusCode::CREATED, Json(created)))
 }

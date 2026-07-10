@@ -85,7 +85,10 @@ async fn test_dataset_search() {
 
     state.store.create_dataset(ds).await.unwrap();
 
-    let pagination = PaginationParams { offset: 0, limit: 50 };
+    let pagination = PaginationParams {
+        offset: 0,
+        limit: 50,
+    };
     let all = state.store.list_datasets(None, &pagination).await.unwrap();
     assert_eq!(all.data.len(), 1, "Dataset should be stored");
 
@@ -121,7 +124,10 @@ async fn test_glossary_term_crud() {
     let fetched = state.store.get_glossary_term(created.id).await.unwrap();
     assert_eq!(fetched.name, "Customer Email");
 
-    let pagination = PaginationParams { offset: 0, limit: 50 };
+    let pagination = PaginationParams {
+        offset: 0,
+        limit: 50,
+    };
     let all = state.store.list_glossary_terms(&pagination).await.unwrap();
     assert_eq!(all.data.len(), 1);
 }
@@ -157,7 +163,10 @@ async fn test_policy_engine() {
         role: "analyst".into(),
     };
 
-    let pagination = PaginationParams { offset: 0, limit: 50 };
+    let pagination = PaginationParams {
+        offset: 0,
+        limit: 50,
+    };
     let result = opencatalog_policy::PolicyEvaluator::evaluate(
         &state.store.list_policies(&pagination).await.unwrap().data,
         &request,
@@ -206,7 +215,10 @@ async fn test_lineage() {
 
     let graph = state
         .store
-        .get_lineage(node2.dataset_id, opencatalog_core::traits::LineageDirection::Upstream)
+        .get_lineage(
+            node2.dataset_id,
+            opencatalog_core::traits::LineageDirection::Upstream,
+        )
         .await
         .unwrap();
 
@@ -266,7 +278,10 @@ async fn test_sqlite_store() {
     let created_term = store.create_glossary_term(term).await.unwrap();
     assert_ne!(created_term.id, uuid::Uuid::nil());
 
-    let pagination = PaginationParams { offset: 0, limit: 50 };
+    let pagination = PaginationParams {
+        offset: 0,
+        limit: 50,
+    };
     let terms = store.list_glossary_terms(&pagination).await.unwrap();
     assert_eq!(terms.data.len(), 1);
 }
@@ -456,13 +471,19 @@ async fn test_audit_log() {
     }
 
     // list with default pagination
-    let pagination = PaginationParams { offset: 0, limit: 50 };
+    let pagination = PaginationParams {
+        offset: 0,
+        limit: 50,
+    };
     let page = state.store.list_audit_entries(&pagination).await.unwrap();
     assert_eq!(page.data.len(), 5);
     assert_eq!(page.total, 5);
 
     // paginate with small limit
-    let pagination = PaginationParams { offset: 0, limit: 2 };
+    let pagination = PaginationParams {
+        offset: 0,
+        limit: 2,
+    };
     let page = state.store.list_audit_entries(&pagination).await.unwrap();
     assert_eq!(page.data.len(), 2);
     assert_eq!(page.total, 5);
@@ -470,13 +491,19 @@ async fn test_audit_log() {
     assert_eq!(page.limit, 2);
 
     // second page
-    let pagination = PaginationParams { offset: 2, limit: 2 };
+    let pagination = PaginationParams {
+        offset: 2,
+        limit: 2,
+    };
     let page = state.store.list_audit_entries(&pagination).await.unwrap();
     assert_eq!(page.data.len(), 2);
     assert_eq!(page.total, 5);
 
     // last page (single item)
-    let pagination = PaginationParams { offset: 4, limit: 2 };
+    let pagination = PaginationParams {
+        offset: 4,
+        limit: 2,
+    };
     let page = state.store.list_audit_entries(&pagination).await.unwrap();
     assert_eq!(page.data.len(), 1);
     assert_eq!(page.total, 5);
@@ -583,11 +610,7 @@ async fn test_schema_versions() {
     assert_eq!(updated.version, 2);
 
     // get schema versions
-    let versions = state
-        .store
-        .get_schema_versions(created.id)
-        .await
-        .unwrap();
+    let versions = state.store.get_schema_versions(created.id).await.unwrap();
     assert_eq!(versions.len(), 2);
 
     let v1 = versions.iter().find(|v| v.version == 1).unwrap();
@@ -597,20 +620,12 @@ async fn test_schema_versions() {
     assert_eq!(v2.schema.len(), 2);
 
     // diff from v1 to v2
-    let diff = state
-        .store
-        .diff_schema(created.id, 1, 2)
-        .await
-        .unwrap();
+    let diff = state.store.diff_schema(created.id, 1, 2).await.unwrap();
     assert!(diff.contains("+ email string (added)"));
     assert!(diff.contains("- name string (removed)"));
 
     // diff from v2 to v1 (reverse)
-    let diff_rev = state
-        .store
-        .diff_schema(created.id, 2, 1)
-        .await
-        .unwrap();
+    let diff_rev = state.store.diff_schema(created.id, 2, 1).await.unwrap();
     assert!(diff_rev.contains("+ name string (added)"));
     assert!(diff_rev.contains("- email string (removed)"));
 }
@@ -814,7 +829,13 @@ async fn test_pagination() {
     // -- test list_datasets pagination --
     let page1 = state
         .store
-        .list_datasets(Some(ds.id), &PaginationParams { offset: 0, limit: 10 })
+        .list_datasets(
+            Some(ds.id),
+            &PaginationParams {
+                offset: 0,
+                limit: 10,
+            },
+        )
         .await
         .unwrap();
     assert_eq!(page1.data.len(), 10);
@@ -824,7 +845,13 @@ async fn test_pagination() {
 
     let page2 = state
         .store
-        .list_datasets(Some(ds.id), &PaginationParams { offset: 10, limit: 10 })
+        .list_datasets(
+            Some(ds.id),
+            &PaginationParams {
+                offset: 10,
+                limit: 10,
+            },
+        )
         .await
         .unwrap();
     assert_eq!(page2.data.len(), 10);
@@ -832,7 +859,13 @@ async fn test_pagination() {
 
     let page3 = state
         .store
-        .list_datasets(Some(ds.id), &PaginationParams { offset: 20, limit: 10 })
+        .list_datasets(
+            Some(ds.id),
+            &PaginationParams {
+                offset: 20,
+                limit: 10,
+            },
+        )
         .await
         .unwrap();
     assert_eq!(page3.data.len(), 5);
@@ -851,7 +884,10 @@ async fn test_pagination() {
     // -- test list_glossary_terms pagination --
     let terms_page = state
         .store
-        .list_glossary_terms(&PaginationParams { offset: 0, limit: 5 })
+        .list_glossary_terms(&PaginationParams {
+            offset: 0,
+            limit: 5,
+        })
         .await
         .unwrap();
     assert_eq!(terms_page.data.len(), 5);
@@ -860,7 +896,13 @@ async fn test_pagination() {
     // -- test search_datasets pagination --
     let search_page = state
         .store
-        .search_datasets("pagination", &PaginationParams { offset: 0, limit: 5 })
+        .search_datasets(
+            "pagination",
+            &PaginationParams {
+                offset: 0,
+                limit: 5,
+            },
+        )
         .await
         .unwrap();
     assert_eq!(search_page.data.len(), 5);
@@ -890,7 +932,11 @@ async fn test_crawl_run_persistence() {
         let run = CrawlRun {
             id: uuid::Uuid::nil(),
             data_source_id: ds.id,
-            status: if i == 2 { CrawlStatus::Failed } else { CrawlStatus::Completed },
+            status: if i == 2 {
+                CrawlStatus::Failed
+            } else {
+                CrawlStatus::Completed
+            },
             started_at: chrono::Utc::now(),
             completed_at: Some(chrono::Utc::now()),
             datasets_found: (i + 1) as i32 * 10,
@@ -901,7 +947,10 @@ async fn test_crawl_run_persistence() {
     }
 
     // list crawl runs for this datasource
-    let pagination = PaginationParams { offset: 0, limit: 10 };
+    let pagination = PaginationParams {
+        offset: 0,
+        limit: 10,
+    };
     let runs = state
         .store
         .list_crawl_runs(ds.id, &pagination)
@@ -1094,13 +1143,24 @@ async fn test_search_across_entities() {
     // -- search for "sales" should match dataset name --
     let results = state.store.search("sales", 10).await.unwrap();
     assert!(!results.results.is_empty());
-    assert!(results.results.iter().any(|r| r.kind == "dataset" && r.name == "sales_orders"));
+    assert!(
+        results
+            .results
+            .iter()
+            .any(|r| r.kind == "dataset" && r.name == "sales_orders")
+    );
 
     // -- search for "order" should match dataset name + glossary term --
     let results = state.store.search("order", 10).await.unwrap();
     assert!(!results.results.is_empty());
-    assert!(results.results.iter().any(|r| r.kind == "dataset"), "should match dataset");
-    assert!(results.results.iter().any(|r| r.kind == "glossary_term"), "should match glossary term");
+    assert!(
+        results.results.iter().any(|r| r.kind == "dataset"),
+        "should match dataset"
+    );
+    assert!(
+        results.results.iter().any(|r| r.kind == "glossary_term"),
+        "should match glossary term"
+    );
 
     // -- search for "email" should match column name --
     let results = state.store.search("email", 10).await.unwrap();
@@ -1115,7 +1175,12 @@ async fn test_search_across_entities() {
     // -- search for "inventory" should match dataset tags --
     let results = state.store.search("inventory", 10).await.unwrap();
     assert!(!results.results.is_empty());
-    assert!(results.results.iter().any(|r| r.kind == "dataset" && r.name == "product_catalog"));
+    assert!(
+        results
+            .results
+            .iter()
+            .any(|r| r.kind == "dataset" && r.name == "product_catalog")
+    );
 
     // -- search for "purchase" should match glossary synonym --
     let results = state.store.search("purchase", 10).await.unwrap();
@@ -1132,7 +1197,10 @@ async fn test_search_across_entities() {
     assert!(results.results.len() <= 1);
 
     // -- search_datasets filtered by query --
-    let pagination = PaginationParams { offset: 0, limit: 50 };
+    let pagination = PaginationParams {
+        offset: 0,
+        limit: 50,
+    };
     let ds_search = state
         .store
         .search_datasets("sales", &pagination)
